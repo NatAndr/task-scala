@@ -17,6 +17,8 @@ object Task extends App {
     val json = file.getLines.mkString
     val data = ujson.read(json)
 
+    file.close()
+
     val countries = getCountries(data, limit, region)
 
     countries.map(country => {
@@ -33,15 +35,15 @@ object Task extends App {
       record("region").str == region
     })
       .map(record => {
-        val capital = Option(record("capital").arr) filter {
-          _.nonEmpty
-        } map { arr => arr(0) } map {
+        val capital = Option(record("capital").arr) flatMap {
+          _.headOption
+        } map {
           _.str
         }
 
         Country(record("name")("official").str, capital getOrElse "", record("area").num)
       })
-      .sortBy(_.area)(Ordering[Double].reverse)
+      .sortBy(-_.area)
       .take(limit)
   }
 
@@ -55,4 +57,8 @@ object Task extends App {
   private val printer = new PrintStream(fos)
 
   printer.println(ujson.write(result))
+
+  printer.close()
+  fos.close()
+
 }
